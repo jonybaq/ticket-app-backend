@@ -1,52 +1,49 @@
-const BandList = require('./bandList');
+const TicketList = require("./ticketList");
 class Sockets {
     constructor(io){
         this.io=io;
-        this.bandList= new BandList();
+        this.ticketList= new TicketList();
         this.socketEvents();
     }
     socketEvents(){
         this.io.on('connection', (socket) => { 
             console.log(`Cliente Conectado`);
-            //Emitir todas las bandas actuales
-            socket.emit('current-bands',this.bandList.getBands());  
-            socket.on('votar',(data)=>{
-                console.log(`votar`, data);
-                this.bandList.increaseVotes(data);
-                this.io.emit('current-bands',this.bandList.getBands());
-            });
-            socket.on('renombrar',(id,nombre)=>{
-                console.log(`renombrar`, id,nombre);
-                this.bandList.changeBandName(id,nombre);
-                this.io.emit('current-bands',this.bandList.getBands());
-            });
-            socket.on('eliminar',(id)=>{
-                console.log(`eliminar`, id);
-                this.bandList.removeBand(id);
-                this.io.emit('current-bands',this.bandList.getBands());
-            });
-            socket.on('insertar',(nombre)=>{
-                console.log(`insertar`, nombre);
-                this.bandList.addBand(nombre);
-                this.io.emit('current-bands',this.bandList.getBands());
-            });
-            //console.log(`socket.id`, socket.handshake.query.nombre);
-            /*this.io.emit('mensaje-bienvenida','Se conecto el usuario '+socket.handshake.query.nombre);
-            socket.on('mensaje-cliente',(datos)=>{
-                console.log(`mensaje-cliente`, datos);
-                this.io.emit('mensaje-server',socket.handshake.query.nombre+': '+datos);
-            });
-            socket.on("disconnect", () => {
-                console.log(`disconnect`);
-                this.io.emit('mensaje-bienvenida','Se Desconecto el usuario '+socket.handshake.query.nombre);
-              });
-            socket.on("mensaje-escribiendo", () => {
-                this.io.emit('mensaje-escribiendo','Escribiendo el usuario '+socket.handshake.query.nombre);
-            });  
+            //Emitir todas las bandas actuales   
+            socket.on('nuevoTicket',(data,callback)=>{
+                const nuevoTicket=this.ticketList.crearTicket();
+                callback(nuevoTicket.numero);
+                console.log('nuevo ticket No.'+nuevoTicket.numero);
+                console.log('pendientes',this.ticketList.getPendientes);
+                console.log('asignados.',this.ticketList.getAsignados);
+            }); 
 
-            socket.on("mensaje-soltando", () => {
-                this.io.emit('mensaje-soltando','');
-            });*/
+            socket.on('asignar-ticket',(data,callback)=>{
+                const nuevoTicket=this.ticketList.asignarTicket(data.agente,data.cubiculo);
+                if (nuevoTicket) {
+                    callback(nuevoTicket);
+                    console.log('asignado ticket No.'+nuevoTicket.numero);
+                    console.log('pendientes',this.ticketList.getPendientes);
+                    console.log('asignados.',this.ticketList.getAsignados);
+                    //console.log(`asigado ultimo`, this.ticketList.ultimoTickeAsigando(data.agente));
+                    this.io.emit('tickets-asignados',this.ticketList.ultimo10);
+                }
+                
+            });
+            socket.on('ultimo-ticket',(data,callback)=>{
+                const ultimoTicket=this.ticketList.ultimoTickeAsigando(data);
+                if (ultimoTicket) {
+                    callback(ultimoTicket);
+                    console.log(`asigado ultimo`,ultimoTicket );
+                }
+                
+            });
+            socket.on('tickets',()=>{
+                this.io.emit('tickets-asignados',this.ticketList.ultimo10);
+            });
+            
+            
+
+
          });
 
     }

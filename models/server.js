@@ -14,12 +14,12 @@ class Server {
         this.server = http.createServer(this.app);
         ///configuraciones socket
         this.io = sockeiIo(this.server,{cors:{origin:'*'}});
+        this.socket=new Sockets(this.io);
     }
 
     execute(){
         //inicializar middlewares
         this.middlewares();
-        this.configurarSockets();
         //inicializa el server
         this.server.listen(this.port,()=>{
             console.log('Server corriendo en el puerto '+this.port);
@@ -29,12 +29,16 @@ class Server {
 
     middlewares(){
         this.app.use(express.static(path.resolve(__dirname,'../public')));
+        this.app.get('/ultimos',(req,res)=>{
+            res.json({
+                ok:true,
+                ultimos:this.socket.ticketList.ultimo10
+            });
+        });
         
     }
 
-    configurarSockets(){
-        new Sockets(this.io);
-    }
+
 }
 
 module.exports=Server;
